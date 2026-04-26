@@ -335,14 +335,23 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 // ✅ 請把下面這行換成你的 Apps Script 部署網址
 const API_URL = 'https://script.google.com/macros/s/AKfycbzcTwBNqIhBdIT-63DS-5CHDO3FGLw6C7cORdvZisJ5JgGVARHsnHj_MyIz2HluCaxzww/exec';
 
+https://github.com/Jayyu231/chatfirst/blob/main/index.html
 async function callAPI(action, payload = {}) {
+console.log('📡 callAPI:', action, payload);
+try {
   const res = await fetch(API_URL, {
     method:  'POST',
     headers: { 'Content-Type': 'text/plain' },
     body:    JSON.stringify({ action, payload })
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  console.log('📡 HTTP status:', res.status);
+  const text = await res.text();
+  console.log('📡 Response:', text);
+  return JSON.parse(text);
+} catch(err) {
+  console.error('📡 fetch 失敗:', err.message);
+  throw err;
+}
 }
 
 // ── Router ──
