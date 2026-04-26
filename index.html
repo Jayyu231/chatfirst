@@ -335,24 +335,46 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 // ✅ 請把下面這行換成你的 Apps Script 部署網址
 const API_URL = 'https://script.google.com/macros/s/AKfycbzcTwBNqIhBdIT-63DS-5CHDO3FGLw6C7cORdvZisJ5JgGVARHsnHj_MyIz2HluCaxzww/exec';
 
-async function callAPI(action, payload = {}) {
-  console.log('📡 callAPI:', action);
+function callAPI(action, payload = {}) {
+  return new Promise((resolve, reject) => {
+    // 每次呼叫產生唯一的 callback 函數名稱
+    const cbName = '_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
-  // 用 GET + URL 參數，繞過 CORS 限制
-  const params = new URLSearchParams({
-    action:  action,
-    payload: JSON.stringify(payload)
+    // 設定 timeout（10秒）
+    const timer = setTimeout(() => {
+      delete window[cbName];
+      document.getElementById(cbName)?.remove();
+      reject(new Error('請求逾時'));
+    }, 10000);
+
+    // 定義 callback 函數
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      delete window[cbName];
+      document.getElementById(cbName)?.remove();
+      resolve(data);
+    };
+
+    // 建立 <script> 標籤發送請求
+    const params = new URLSearchParams({
+      action:   action,
+      payload:  JSON.stringify(payload),
+      callback: cbName
+    });
+
+    const script = document.createElement('script');
+    script.id  = cbName;
+    script.src = `${API_URL}?${params}`;
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[cbName];
+      script.remove();
+      reject(new Error('請求失敗'));
+    };
+    document.head.appendChild(script);
+
+    console.log('📡 callAPI (JSONP):', action);
   });
-
-  const res = await fetch(`${API_URL}?${params}`, {
-    method:   'GET',
-    redirect: 'follow'
-  });
-
-  console.log('📡 HTTP status:', res.status);
-  const text = await res.text();
-  console.log('📡 Response:', text);
-  return JSON.parse(text);
 }
 
 // ── Router ──
