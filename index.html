@@ -337,21 +337,23 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzcTwBNqIhBdIT-63DS-5CH
 
 https://github.com/Jayyu231/chatfirst/blob/main/index.html
 async function callAPI(action, payload = {}) {
-console.log('📡 callAPI:', action, payload);
-try {
-  const res = await fetch(API_URL, {
-    method:  'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body:    JSON.stringify({ action, payload })
+  console.log('📡 callAPI:', action);
+
+  // 用 GET + URL 參數，繞過 CORS 限制
+  const params = new URLSearchParams({
+    action:  action,
+    payload: JSON.stringify(payload)
   });
+
+  const res = await fetch(`${API_URL}?${params}`, {
+    method:   'GET',
+    redirect: 'follow'
+  });
+
   console.log('📡 HTTP status:', res.status);
   const text = await res.text();
   console.log('📡 Response:', text);
   return JSON.parse(text);
-} catch(err) {
-  console.error('📡 fetch 失敗:', err.message);
-  throw err;
-}
 }
 
 // ── Router ──
