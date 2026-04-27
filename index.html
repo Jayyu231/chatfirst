@@ -733,27 +733,20 @@ function callAPI(action, payload = {}) {
 
 
 
-function callAPIPost(action, payload = {}) {
-  return fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      // 關鍵：一定要用 text/plain
-      'Content-Type': 'text/plain;charset=utf-8'
-    },
-    body: JSON.stringify({ action, payload })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error('網路回應異常');
-    return res.json();
-  })
-  .then(data => {
-    // 檢查 GAS 回傳的內容是否標記為成功
-    if (data.ok || data.result === 'success') {
-      return data;
-    } else {
-      throw new Error(data.error || '後端處理失敗');
-    }
+async function callAPIPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body:    JSON.stringify({ action, payload })
   });
+
+  if (!res.ok) throw new Error('網路回應異常 HTTP ' + res.status);
+
+  const data = await res.json();
+
+  // ✅ 直接回傳 data，讓呼叫方自己判斷 ok/duplicate/error
+  // 不在這裡 throw，避免把 duplicate 當錯誤處理
+  return data;
 }
 
 // ── Router ──
@@ -1137,15 +1130,31 @@ function adminSaveChecked(cb, pi, idx) {
 function rebuildStats() {
   const btn = document.getElementById('btn-rebuild');
   btn.disabled = true; btn.textContent = '⏳ 同步中…';
+
   const statusUpdates = [];
   document.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb => {
     statusUpdates.push({ key: cb.getAttribute('data-key'), checked: cb.checked });
   });
-  if (!statusUpdates.length) { showToast('⚠️ 找不到任何 Checkbox'); btn.disabled = false; btn.textContent = '📊 更新統計'; return; }
-  // saveAndRebuild（更新統計）
-    callAPIPost('saveAndRebuild', { statusUpdates })
-    .then(res => { btn.disabled = false; btn.textContent = '📊 更新統計'; showToast(res.ok ? '✅ 同步成功！' : '❌ ' + res.error); })
-    .catch(e  => { btn.disabled = false; btn.textContent = '📊 更新統計'; showToast('❌ ' + e.message); });
+
+  // ✅ 加這行確認
+  console.log('statusUpdates 型態:', typeof statusUpdates, Array.isArray(statusUpdates));
+  console.log('statusUpdates 內容:', JSON.stringify(statusUpdates));
+
+  if (!statusUpdates.length) {
+    showToast('⚠️ 找不到任何 Checkbox');
+    btn.disabled = false; btn.textContent = '📊 更新統計';
+    return;
+  }
+
+  callAPI('saveAndRebuild', { statusUpdates })
+    .then(res => {
+      btn.disabled = false; btn.textContent = '📊 更新統計';
+      showToast(res.ok ? '✅ 同步成功！' : '❌ ' + (res.error || '未知錯誤'));
+    })
+    .catch(e => {
+      btn.disabled = false; btn.textContent = '📊 更新統計';
+      showToast('❌ ' + e.message);
+    });
 }
 
 // ── Helpers ──
