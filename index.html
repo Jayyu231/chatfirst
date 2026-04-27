@@ -500,12 +500,12 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <div class="page" id="page-user">
   <div class="app-header">
     <button class="btn-back" onclick="showPage('page-landing')">← 返回</button>
-    <h2>📝 報名 / 查詢</h2>
+    <h2>查詢</h2>
     <div style="width:60px"></div>
   </div>
   <div class="user-tabs">
-    <button class="utab active" id="utab-reg" onclick="switchUserTab('reg')">✍️ 報名表單</button>
-    <button class="utab" id="utab-query" onclick="switchUserTab('query')">🔍 查詢狀態</button>
+    <button class="utab" id="utab-reg" onclick="switchUserTab('reg')">✍️ 報名表單</button>
+    <button class="utab active" id="utab-query" onclick="switchUserTab('query')">🔍 查詢狀態</button>
   </div>
 
   <div id="upanel-reg">
@@ -517,8 +517,11 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
           <div class="field"><label>性別<span class="req">*</span></label>
             <div class="select-wrap"><select id="f-gender"><option value="">請選擇</option><option>男</option><option>女</option><option>其他</option></select></div>
           </div>
-          <div class="field"><label>今年貴庚<span class="req">*</span></label><input id="f-age" type="number" inputmode="numeric" min="1" max="120" placeholder="例：25"></div>
-          <div class="field"><label>IG 帳號</label><input id="f-ig" type="text" placeholder="@username" autocomplete="off"></div>
+          <div class="field"><label>年紀<span class="req">*</span></label><input id="f-age" type="number" inputmode="numeric" min="1" max="120" placeholder="例：25"></div>
+          <!-- 改後 -->
+          <div class="field"><label>IG 帳號<span class="req">*</span></label>
+
+          <input id="f-ig" type="text" placeholder="@username" autocomplete="off"></div>
           <div class="field"><label>個人 E-Mail<span class="req">*</span></label><input id="f-email" type="email" inputmode="email" placeholder="example@gmail.com" autocomplete="email"></div>
         </div>
         <div class="form-card">
@@ -528,8 +531,19 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
         </div>
         <div class="form-card">
           <h3>付款資訊</h3>
-          <div class="field"><label>匯款後五碼</label><input id="f-pay" type="text" inputmode="numeric" maxlength="5" placeholder="完成匯款後填入後五碼"></div>
-          <p class="hint">※ 可先送出報名，收到確認信後再補匯款資訊</p>
+          <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;">
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:4px;font-weight:700;">匯款帳號</div>
+            <div style="font-size:15px;font-weight:800;color:var(--gray-900);letter-spacing:1px;">（812）台新銀行</div>
+            <div style="font-size:18px;font-weight:800;color:var(--blue);letter-spacing:2px;margin-top:4px;">28881020086812</div>
+          </div>
+          <div>
+            <!-- 新增這行 -->
+            <p style="font-size:13px;color:#dc2626;font-weight:700;margin-top:6px;">⚠️ 請於報名後 2 日內完成匯款，逾時將取消報名資格</p>
+          </div>
+          <div class="field"><label>匯款後五碼<span class="req">*</span></label>
+            <input id="f-pay" type="text" inputmode="numeric" maxlength="5" placeholder="例：86123">
+          </div>
+          <p class="hint">※ 請填入您匯款帳戶的後五碼供核對，非收款帳號後五碼</p>
         </div>
         <button class="btn-submit" id="btn-submit" onclick="submitForm()">確認送出報名 →</button>
         <div class="pad-bottom"></div>
