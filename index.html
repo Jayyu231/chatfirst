@@ -403,10 +403,11 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
       <div><h3>活動介紹</h3><p>了解先聊再說是什麼活動</p></div>
       </div>
       
-      <div class="landing-card" onclick="showPage('page-user')">
-        <div class="card-icon">📝</div>
-        <div><h3>報名 / 查詢</h3><p>填寫報名表單或查詢報名狀態</p></div>
+      <div class="landing-card" onclick="sessionStorage.setItem('defaultTab', 'query'); showPage('page-user')">
+      <div class="card-icon">📝</div>
+      <div><h3>查詢</h3><p>查詢報名狀態</p></div>
       </div>
+      
       <!-- 改後：預設隱藏，只有 #admin 才顯示 -->
       <div class="landing-card" id="admin-card" onclick="showPage('page-login')" style="display:none;">
         <div class="card-icon">🔐</div>
@@ -681,8 +682,23 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
+
   if (id === 'page-admin') loadAdminData();
-  if (id === 'page-user')  loadSessions();
+
+  if (id === 'page-user') {
+    loadSessions();
+
+    // ⭐ 新增這段（關鍵）
+    const tab = sessionStorage.getItem("defaultTab");
+
+    if (tab === "query") {
+      switchUserTab("query");
+    } else {
+      switchUserTab("reg");
+    }
+
+    sessionStorage.removeItem("defaultTab"); // 用完清掉
+  }
 }
 
 // ── User: 報名 ──
