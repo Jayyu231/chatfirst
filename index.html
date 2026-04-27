@@ -480,7 +480,7 @@ function submitForm() {
     })
     .catch(err => { btn.disabled = false; btn.textContent = '確認送出報名 →'; showToast('❌ ' + err.message); });
 
-
+}
 function showRegSuccess(data) {
   document.getElementById('reg-form-view').style.display    = 'none';
   document.getElementById('reg-success-view').style.display = 'block';
