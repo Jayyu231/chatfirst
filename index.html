@@ -870,28 +870,38 @@ function submitForm() {
   btn.disabled = true;
   btn.textContent = '⏳ 送出中…';
 
-  // ===== API 呼叫 =====
+// ===== API 呼叫 =====
   callAPIPost('submitRegistration', { name, gender, age, ig, email, pay, sessions })
     .then(res => {
-      btn.disabled = false;
-      btn.textContent = '確認送出報名 →';
-
+      // 注意：這裡先不急著把按鈕改回「確認送出」，讓使用者覺得還在處理
+      
       if (!res.ok) {
+        btn.disabled = false;
+        btn.textContent = '確認送出報名 →';
         showToast('❌ ' + (res.error || '送出失敗'));
         return;
       }
 
       if (res.duplicate) {
+        btn.disabled = false;
+        btn.textContent = '確認送出報名 →';
         showRegDuplicate(res.duplicateSessions);
         return;
       }
 
-      // ✅ 直接成功（不用再查詢）
-      showRegSuccess({
-        name,
-        sessions,
-        email
-      });
+      // ✅ 資料已入庫，現在人為延遲 1.5 秒，確保後續查詢（如名次）是準確的
+      btn.textContent = '整理資料中...'; 
+      
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '確認送出報名 →';
+        
+        showRegSuccess({
+          name,
+          sessions,
+          email
+        });
+      }, 1500); // 這裡就是那 1.5 秒的「優雅等待」
     })
     .catch(err => {
       btn.disabled = false;
