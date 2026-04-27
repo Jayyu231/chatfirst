@@ -335,12 +335,13 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
   // 判斷網址是否有 #admin，有才顯示管理者入口
 (function() {
   if (window.location.hash === '#admin') {
-    document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('load', function() {
       const card = document.getElementById('admin-card');
       if (card) card.style.display = 'flex';
     });
   }
 })();
+
 // ── API 設定（GitHub Pages 版本）──
 // ✅ 請把下面這行換成你的 Apps Script 部署網址
 const API_URL = 'https://script.google.com/macros/s/AKfycbzcTwBNqIhBdIT-63DS-5CHDO3FGLw6C7cORdvZisJ5JgGVARHsnHj_MyIz2HluCaxzww/exec';
