@@ -733,22 +733,26 @@ function callAPI(action, payload = {}) {
 
 
 
-  function callAPIPost(action, payload = {}) {
+function callAPIPost(action, payload = {}) {
   return fetch(API_URL, {
     method: 'POST',
-    // 關鍵：改用 text/plain 避免觸發 OPTIONS 預檢請求
     headers: {
-      'Content-Type': 'text/plain;charset=utf-8' 
+      // 關鍵：一定要用 text/plain
+      'Content-Type': 'text/plain;charset=utf-8'
     },
     body: JSON.stringify({ action, payload })
   })
   .then(res => {
-    if (!res.ok) throw new Error('網路回應不正常');
+    if (!res.ok) throw new Error('網路回應異常');
     return res.json();
   })
-  .catch(err => {
-    console.error("API Call Error:", err);
-    throw err;
+  .then(data => {
+    // 檢查 GAS 回傳的內容是否標記為成功
+    if (data.ok || data.result === 'success') {
+      return data;
+    } else {
+      throw new Error(data.error || '後端處理失敗');
+    }
   });
 }
 
