@@ -630,17 +630,28 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <script>
 
 async function verifyREST() {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ action: 'ping' })
-  });
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      // 關鍵修正：將 application/json 改為 text/plain
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({ action: 'ping' })
+    });
 
-  console.log('status:', res.status);
-  console.log('content-type:', res.headers.get('content-type'));
-
-  const data = await res.json();
-  console.log('json:', data);
+    console.log('HTTP Status:', res.status);
+    
+    // 注意：GAS 回傳時通常會經過重新導向，fetch 會自動處理
+    const data = await res.json();
+    console.log('JSON Response:', data);
+    
+  } catch (err) {
+    console.error('Fetch 失敗，原因可能是：');
+    console.error('1. API_URL 錯誤或未部署為「所有人」');
+    console.error('2. 依舊觸發了 CORS 限制（請檢查 Headers）');
+    console.error('詳細錯誤訊息:', err);
+  }
 }
   
   // 判斷網址是否有 #admin，有才顯示管理者入口
