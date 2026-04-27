@@ -676,7 +676,8 @@ function callAPI(action, payload = {}) {
 }
 
   // ── 寫入/敏感操作用 doPost（no-cors，不讀回應）──
-async function callAPIPost(action, payload = {}) {
+  /* 
+  async function callAPIPost(action, payload = {}) {
   try {
     await fetch(API_URL, {
       method:  'POST',
@@ -688,6 +689,20 @@ async function callAPIPost(action, payload = {}) {
   } catch(err) {
     return { ok: false, error: err.message };
   }
+}
+  
+  */
+
+
+  function callAPIPost(action, payload = {}) {
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ action, payload })
+  })
+  .then(res => res.json());
 }
   
 
@@ -807,36 +822,26 @@ function submitForm() {
 
   // ===== API 呼叫 =====
   callAPIPost('submitRegistration', { name, gender, age, ig, email, pay, sessions })
-    .then(() => {
-      // 🔁 用查詢確認結果（因為 POST 無法直接回應）
-      return callAPI('queryMyRegistration', { email });
-    })
     .then(res => {
       btn.disabled = false;
       btn.textContent = '確認送出報名 →';
 
       if (!res.ok) {
-        showToast('❌ 查詢失敗');
+        showToast('❌ ' + (res.error || '送出失敗'));
         return;
       }
 
-      if (!res.found) {
-        showToast('❌ 找不到報名資料（可能尚未寫入）');
+      if (res.duplicate) {
+        showRegDuplicate(res.duplicateSessions);
         return;
       }
 
-      // 🔥 判斷是否剛報名成功（用 sessions 比對）
-      const registeredSessions = res.registrations.map(r => r.sessionLabel);
-
-      if (registeredSessions.length) {
-        showRegSuccess({
-          name,
-          sessions: registeredSessions,
-          email
-        });
-      } else {
-        showToast('❌ 報名失敗，請稍後再試');
-      }
+      // ✅ 直接成功（不用再查詢）
+      showRegSuccess({
+        name,
+        sessions,
+        email
+      });
     })
     .catch(err => {
       btn.disabled = false;
