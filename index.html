@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>報名系統</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -17,6 +17,7 @@
   --shadow:0 1px 4px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.12);
   --header-h:56px;
   --font:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-base: 16px; /* 確保基礎字級足夠 */
 }
 html{font-size:16px;-webkit-text-size-adjust:100%;}
 body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);min-height:100vh;overflow-x:hidden;}
@@ -31,16 +32,133 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .btn-back:active{background:rgba(255,255,255,.3);}
 
 /* Landing */
-.landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:24px;background:linear-gradient(160deg,#1a3a6b 0%,#2563eb 60%,#3b82f6 100%);}
-.landing-logo{font-size:52px;}
-.landing h1{color:white;font-size:22px;font-weight:800;text-align:center;}
-.landing>p{color:rgba(255,255,255,.75);font-size:14px;text-align:center;}
-.landing-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;}
-.landing-card{background:white;border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:transform .15s;box-shadow:0 4px 20px rgba(0,0,0,.2);}
-.landing-card:active{transform:scale(.98);}
-.landing-card .card-icon{font-size:32px;flex-shrink:0;}
-.landing-card h3{font-size:15px;font-weight:700;color:var(--gray-900);margin-bottom:3px;}
-.landing-card p{font-size:12px;color:var(--gray-500);line-height:1.5;}
+/* 修改後的 Landing 樣式 */
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 讓內容在垂直方向平均分配空間，這樣即便只有一個卡片，標題也會往中間靠 */
+  justify-content: center; 
+  padding: 40px 20px;
+  gap: 32px; /* 增加標題與卡片之間的間距，視覺更平衡 */
+  background: linear-gradient(160deg, #1a3a6b 0%, #2563eb 60%, #3b82f6 100%);
+  text-align: center;
+  background-size: 200% 200%;
+  animation: gradientBG 15s ease infinite;
+
+
+}
+
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  /* 加上一個中間過渡色，增加深邃感 */
+  background: linear-gradient(
+    135deg, 
+    #1e3a8a 0%,    /* 深藍 */
+    #2563eb 50%,   /* 標準藍 */
+    #1d4ed8 100%   /* 稍微收尾的藍 */
+  );
+  /* 加上這個讓背景有一種磨砂質感 */
+  background-attachment: fixed;
+  text-align: center;
+}
+
+/* 確保標題上下有一定的比例，不被壓縮 */
+.landing h1 {
+  color: white;
+  font-size: 26px; /* 稍微放大一點點，在手機上比例更好 */
+  font-weight: 800;
+  margin: 0;
+}
+
+/* 3. 卡片容器：重點在於排版模式 */
+.landing-cards {
+  display: flex;
+  flex-direction: column;      
+  justify-content: center;  /* 當卡片未撐滿最大寬度時，整組置中 */
+  gap: 20px;                /* 卡片之間的間距 */
+  width: 100%;
+  max-width: 900px;         /* 根據 3 個卡片的寬度設定一個上限 */
+}
+
+/* 2. 標題區域：確保文字置中 */
+.landing-logo { font-size: 50px; margin-bottom: 10px; text-align: center; }
+.landing h1 { margin: 0; text-align: center; }
+.landing p { margin-top: 8px; margin-bottom: 40px; text-align: center; }
+
+/* 針對報名卡片進行特殊處理 */
+.landing-card.primary {
+  border: 1.5px solid rgba(0, 255, 255, 0.4); /* 亮青色邊框 */
+  background: rgba(0, 255, 255, 0.05);       /* 帶一點點青色的底 */
+}
+
+.landing-card.primary:hover {
+  border-color: rgba(0, 255, 255, 0.8);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+
+
+/* 4. 單一卡片：強制所有卡片擁有相同權重 */
+.landing-card {
+  flex: 1;                  /* 重要！不論裡面文字多長，所有卡片寬度絕對一致 */
+  min-width: 0;             /* 防止內容撐開寬度 */
+  max-width: none;    /* ⭐ 取消限制 */
+  
+  /* 讓卡片內部內容也置中 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+  /* 增加一點點陰影讓卡片浮起來 */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+}
+
+.landing-card:active{ transform: scale(.97); background: rgba(255,255,255,0.22); }
+.landing-card .card-icon{ font-size: 36px; }
+.landing-card h3{ font-size: 16px; font-weight: 800; color: #ffffff; margin-bottom: 2px; }
+.landing-card p{ font-size: 12px; color: rgba(255,255,255,0.85); line-height: 1.5; }
+
+.landing-card:hover {
+  transform: translateY(-8px); /* 往上飄浮 */
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4); /* 邊框變亮 */
+  box-shadow: 0 15px 35px rgba(255, 255, 255, 0.1); /* 帶有微光的陰影 */
+}
+
+/* 2. 靜止狀態下：只給第二張卡片一點點顏色暗示 */
+.landing-card:nth-child(2) {
+  border-color: rgba(0, 255, 255, 0.3); /* 淡淡的青色，不刺眼 */
+}
+
+/* 3. 所有卡片共用的 Hover 效果（你原本的版本） */
+/* 這樣 Hover 時，不論哪一張都會變亮、往上飄 */
+.landing-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5); /* 統一變亮 */
+  box-shadow: 0 15px 35px rgba(255, 255, 255, 0.1);
+}
+
+
 
 /* User Tabs */
 .user-tabs{display:flex;background:white;border-bottom:2px solid var(--gray-200);position:sticky;top:var(--header-h);z-index:100;}
@@ -50,9 +168,10 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 /* Form */
 .form-wrap{max-width:560px;margin:0 auto;padding:16px;}
 .form-card{background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:12px;}
-.form-card h3{font-size:14px;font-weight:700;color:var(--gray-900);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--blue-light);}
-.field{margin-bottom:12px;}
-.field label{display:block;font-size:12px;font-weight:700;color:var(--gray-500);margin-bottom:5px;letter-spacing:.3px;}
+.form-card h3{font-size:16px;font-weight:700;color:var(--gray-900);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--blue-light);}
+.field{margin-bottom:16px;}
+
+.field label{display:block;font-size:14px;font-weight:700;color:var(--gray-700);margin-bottom:8px;letter-spacing:.3px;}
 .field label .req{color:var(--red);margin-left:2px;}
 .field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:16px;color:var(--gray-900);outline:none;transition:border-color .15s;background:white;-webkit-appearance:none;font-family:var(--font);}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
@@ -69,15 +188,15 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .session-check.full{opacity:.55;pointer-events:none;background:var(--gray-50);}
 .session-check input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue);flex-shrink:0;}
 .sess-info{flex:1;min-width:0;}
-.sess-label{font-size:14px;font-weight:700;color:var(--gray-900);}
+.sess-label{font-size:15px;font-weight:700;color:var(--gray-900);}
 .sess-count{font-size:11px;color:var(--gray-400);margin-top:2px;}
-.sess-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:var(--radius-full);white-space:nowrap;flex-shrink:0;}
+.sess-badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:var(--radius-full);white-space:nowrap;flex-shrink:0;}
 .sess-ok{background:var(--green-light);color:var(--green);}
 .sess-warn{background:var(--yellow-light);color:var(--yellow-text);}
 .sess-full{background:var(--red-light);color:var(--red);}
 
 /* Buttons */
-.btn-submit{width:100%;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:4px;min-height:50px;}
+.btn-submit{width:100%;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;border:none;border-radius:var(--radius-sm);font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:4px;min-height:56px;}
 .btn-submit:active{opacity:.9;}
 .btn-submit:disabled{opacity:.55;pointer-events:none;}
 .btn-again{margin-top:14px;padding:12px 24px;background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue-border);border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;}
@@ -159,14 +278,20 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .reg-card.done-card{border-left-color:var(--green);}
 
 .reg-card-top{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;gap:8px;}
-.reg-card-name{font-size:15px;font-weight:800;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.reg-card-num{font-size:11px;font-weight:700;color:var(--gray-400);background:var(--gray-100);border-radius:var(--radius-full);padding:2px 8px;flex-shrink:0;}
+.reg-card-name{font-size:16px;font-weight:800;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.reg-card-num{font-size:12px;font-weight:700;color:var(--gray-400);background:var(--gray-100);border-radius:var(--radius-full);padding:2px 8px;flex-shrink:0;}
 .reg-card-time{font-size:11px;color:var(--gray-400);flex-shrink:0;}
 
-.reg-card-body{padding:0 14px 10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
-.reg-card-row{font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:4px;}
+/* .reg-card-body{padding:0 14px 10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;} */
+
+/* 改後 */
+.reg-card-body{padding:0 14px 10px;display:flex;flex-direction:column;gap:5px;}
+.reg-card-row{font-size:14px;color:var(--gray-500);display:flex;align-items:center;gap:4px;}
 .reg-card-row strong{color:var(--gray-900);font-weight:600;}
-.reg-card-row.full{grid-column:1/-1;word-break:break-all;}
+/* .reg-card-row.full{grid-column:1/-1;word-break:break-all;} */
+
+/* 改成 */
+.reg-card-row.full{word-break:break-all;}
 
 .reg-card-footer{padding:10px 14px;background:var(--gray-50);border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:10px;}
 .note-ta{flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;background:white;resize:none;font-family:var(--font);color:var(--gray-900);outline:none;min-height:36px;}
@@ -186,10 +311,83 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 /* Loading */
 .loading-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;gap:14px;color:var(--gray-500);}
 .spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+
 @keyframes spin{to{transform:rotate(360deg);}}
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.landing {
+  /* ... 其他不變 ... */
+  background-size: 200% 200%;
+  animation: gradientBG 15s ease infinite;
+}
 
 .hint{font-size:12px;color:var(--gray-400);line-height:1.6;margin-top:-6px;}
 .pad-bottom{height:max(24px,env(safe-area-inset-bottom));}
+
+/* ── About Page ── */
+.about-hero{background:linear-gradient(160deg,#1a3a6b 0%,#2563eb 100%);padding:40px 20px 32px;text-align:center;}
+.about-hero-icon{font-size:52px;margin-bottom:12px;}
+.about-hero h1{color:white;font-size:22px;font-weight:800;margin-bottom:8px;}
+.about-hero p{color:rgba(255,255,255,.8);font-size:14px;line-height:1.8;white-space:pre-line;}
+.about-section{max-width:560px;margin:0 auto;padding:16px;}
+.about-card{background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:12px;}
+.about-card-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid var(--blue-light);}
+.about-card p{font-size:14px;color:var(--gray-700);line-height:1.8;}
+.about-info-row{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--gray-100);align-items:flex-start;}
+.about-info-row:last-child{border-bottom:none;}
+.about-info-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.about-info-text{font-size:14px;color:var(--gray-700);line-height:1.7;flex:1;}
+.about-info-text strong{color:var(--gray-900);display:block;margin-bottom:2px;}
+.about-notice{background:var(--yellow-light);border-radius:var(--radius-sm);padding:12px 14px;margin-top:4px;}
+.about-notice p{font-size:13px;color:var(--yellow-text);line-height:1.8;}
+.about-cta{background:linear-gradient(135deg,var(--blue),var(--blue-dark));border-radius:var(--radius);padding:24px 20px;text-align:center;margin-bottom:12px;}
+.about-cta p{color:rgba(255,255,255,.85);font-size:13px;margin-bottom:14px;}
+.btn-cta{display:inline-block;background:white;color:var(--blue);padding:12px 32px;border-radius:var(--radius-sm);font-size:15px;font-weight:800;cursor:pointer;border:none;transition:transform .15s;}
+.btn-cta:active{transform:scale(.97);}
+
+
+
+/* ─── 在這裡加入 Media Queries ─── */
+@media (min-width: 768px) {
+  /* 當螢幕寬度大於 768px (平板或桌機) 時執行 */
+  /* 2. 針對頁面容器增加間距，避免在手機上看起來太擠 */
+  .form-wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 20px 16px; /* 增加上下間距 */
+  }
+  
+  .app-header h2 {
+    font-size: 20px; /* 大螢幕標題放大 */
+  }
+
+  .landing-cards {
+    flex-direction: row;
+    justify-content: center;
+    max-width: 900px;
+    flex-wrap: wrap;
+  }
+
+    .landing-card {
+    flex: 1;
+    max-width: 280px; /* ⭐ 只在桌機限制 */
+  }
+}
+
+@media (max-width: 375px) {
+  /* 針對極小螢幕 (如舊款 iPhone) 的微調 */
+  .landing-logo {
+    font-size: 40px;
+  }
+  .landing h1 {
+    font-size: 18px;
+  }
+}
+
 </style>
 </head>
 <body>
