@@ -335,33 +335,26 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 // ✅ 請把下面這行換成你的 Apps Script 部署網址
 const API_URL = 'https://script.google.com/macros/s/AKfycbzcTwBNqIhBdIT-63DS-5CHDO3FGLw6C7cORdvZisJ5JgGVARHsnHj_MyIz2HluCaxzww/exec';
 
+// ── 讀取用 JSONP（doGet）──
 function callAPI(action, payload = {}) {
   return new Promise((resolve, reject) => {
-    // 每次呼叫產生唯一的 callback 函數名稱
     const cbName = '_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-
-    // 設定 timeout（10秒）
     const timer = setTimeout(() => {
       delete window[cbName];
       document.getElementById(cbName)?.remove();
       reject(new Error('請求逾時'));
     }, 10000);
-
-    // 定義 callback 函數
     window[cbName] = (data) => {
       clearTimeout(timer);
       delete window[cbName];
       document.getElementById(cbName)?.remove();
       resolve(data);
     };
-
-    // 建立 <script> 標籤發送請求
     const params = new URLSearchParams({
       action:   action,
       payload:  JSON.stringify(payload),
       callback: cbName
     });
-
     const script = document.createElement('script');
     script.id  = cbName;
     script.src = `${API_URL}?${params}`;
@@ -372,10 +365,24 @@ function callAPI(action, payload = {}) {
       reject(new Error('請求失敗'));
     };
     document.head.appendChild(script);
-
-    console.log('📡 callAPI (JSONP):', action);
   });
 }
+
+  // ── 寫入/敏感操作用 doPost（no-cors，不讀回應）──
+async function callAPIPost(action, payload = {}) {
+  try {
+    await fetch(API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify({ action, payload }),
+      mode:    'no-cors'
+    });
+    return { ok: true };
+  } catch(err) {
+    return { ok: false, error: err.message };
+  }
+}
+  
 
 // ── Router ──
 function showPage(id) {
@@ -452,15 +459,16 @@ function submitForm() {
   if (!sessions.length){ showToast('⚠️ 請選擇至少一個場次'); return; }
   const btn = document.getElementById('btn-submit');
   btn.disabled = true; btn.textContent = '⏳ 送出中…';
-  callAPI('submitRegistration', { name, gender, age, ig, email, pay, sessions })
+  // 改後：送出後用 JSONP 重新查詢確認結果
+  callAPIPost('submitRegistration', { name, gender, age, ig, email, pay, sessions })
+    .then(() => callAPI('queryMyRegistration', { email }))
     .then(res => {
       btn.disabled = false; btn.textContent = '確認送出報名 →';
-      if (res.ok) showRegSuccess({ name, sessions, email });
-      else if (res.duplicate) showRegDuplicate(res.duplicateSessions);
-      else showToast('❌ 送出失敗：' + (res.error || '請稍後再試'));
+      if (res.found) showRegSuccess({ name, sessions, email });
+      else showToast('❌ 送出失敗，請稍後再試');
     })
     .catch(err => { btn.disabled = false; btn.textContent = '確認送出報名 →'; showToast('❌ ' + err.message); });
-}
+
 
 function showRegSuccess(data) {
   document.getElementById('reg-form-view').style.display    = 'none';
@@ -669,7 +677,8 @@ function adminSaveNote(ta) {
   clearTimeout(noteTimer);
   const key = ta.dataset.key, note = ta.value;
   noteTimer = setTimeout(() => {
-    callAPI('saveNote', { key, note }).then(()=>showToast('✅ 備註已儲存')).catch(()=>showToast('❌ 儲存失敗'));
+    // saveNote（備註）
+    callAPIPost('saveNote', { key, note }).then(()=>showToast('✅ 備註已儲存')).catch(()=>showToast('❌ 儲存失敗'));
   }, 600);
 }
 
@@ -678,7 +687,8 @@ function adminSaveChecked(cb, pi, idx) {
   const card = document.getElementById('arow-' + pi + '-' + idx);
   card.classList.toggle('done-card', checked);
   card.classList.toggle('wait-card', !checked && adminData?.sessions?.[adminTabIdx]?.registrants?.[idx]?.waitlist);
-  callAPI('saveChecked', { key, checked })
+  
+  callAPIPost('saveChecked', { key, checked })
     .then(() => showToast(checked ? '✅ 已確認' : '↩️ 已取消確認'))
     .catch(() => showToast('❌ 儲存失敗'));
 }
@@ -691,7 +701,8 @@ function rebuildStats() {
     statusUpdates.push({ key: cb.getAttribute('data-key'), checked: cb.checked });
   });
   if (!statusUpdates.length) { showToast('⚠️ 找不到任何 Checkbox'); btn.disabled = false; btn.textContent = '📊 更新統計'; return; }
-  callAPI('saveAndRebuild', { statusUpdates })
+  // saveAndRebuild（更新統計）
+    callAPIPost('saveAndRebuild', { statusUpdates })
     .then(res => { btn.disabled = false; btn.textContent = '📊 更新統計'; showToast(res.ok ? '✅ 同步成功！' : '❌ ' + res.error); })
     .catch(e  => { btn.disabled = false; btn.textContent = '📊 更新統計'; showToast('❌ ' + e.message); });
 }
