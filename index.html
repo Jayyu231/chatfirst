@@ -774,24 +774,49 @@ function submitForm() {
   const email = document.getElementById('f-email').value.trim();
   const pay = document.getElementById('f-pay').value.trim();
   const sessions = getSelectedSessions();
-  if (!name)           { showToast('⚠️ 請填寫姓名'); return; }
+  // 姓名：不能是數字或特殊符號，至少2字
+  if (!name)                        { showToast('⚠️ 請填寫姓名'); return; }
+  if (name.length < 2)              { showToast('⚠️ 姓名至少需要 2 個字'); return; }
+  if (/[0-9!@#$%^&*()_+]/.test(name)) { showToast('⚠️ 姓名不能包含數字或特殊符號'); return; }
+
+  // 性別
   if (!gender)         { showToast('⚠️ 請選擇性別'); return; }
-  if (!age)            { showToast('⚠️ 請填寫年齡'); return; }
-  if (!email)          { showToast('⚠️ 請填寫 Email'); return; }
+
+  // 年齡：數字、合理範圍
+  if (!age)                         { showToast('⚠️ 請填寫年齡'); return; }
+  if (!/^\d+$/.test(age))           { showToast('⚠️ 年齡請填寫數字'); return; }
+  if (age < 18 || age > 100)        { showToast('⚠️ 年齡請填寫 18–100 之間'); return; }
+
+  // Email：基本格式驗證
+  if (!email)                       { showToast('⚠️ 請填寫 Email'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('⚠️ Email 格式不正確'); return; }
+
   if (!sessions.length){ showToast('⚠️ 請選擇至少一個場次'); return; }
+
+  // IG：格式驗證（@ 開頭可選）
+  if (!ig) { showToast('⚠️ 請填寫 IG 帳號'); return; }
+  const igClean = ig.startsWith('@') ? ig.slice(1) : ig; // 有沒有 @ 都接受
+  if (!/^[a-zA-Z0-9._]{1,30}$/.test(igClean))  { showToast('⚠️ IG 帳號只能包含英文、數字、底線、句點'); return; }
+  if (/^\./.test(igClean) || /\.$/.test(igClean)) { showToast('⚠️ IG 帳號不能以句點開頭或結尾'); return; }
+  if (/\.{2,}/.test(igClean)) { showToast('⚠️ IG 帳號不能有連續句點'); return; }
+
+  // 後五碼
+  if (!pay)              { showToast('⚠️ 請填寫匯款後五碼'); return; }
+  if (!/^\d{5}$/.test(pay)) { showToast('⚠️ 後五碼必須是 5 位數字'); return; }
+  
   const btn = document.getElementById('btn-submit');
   btn.disabled = true; btn.textContent = '⏳ 送出中…';
-  // 改後：送出後用 JSONP 重新查詢確認結果
-  callAPIPost('submitRegistration', { name, gender, age, ig, email, pay, sessions })
-    .then(() => callAPI('queryMyRegistration', { email }))
-    .then(res => {
+  google.script.run
+    .withSuccessHandler(res => {
       btn.disabled = false; btn.textContent = '確認送出報名 →';
-      if (res.found) showRegSuccess({ name, sessions, email });
-      else showToast('❌ 送出失敗，請稍後再試');
+      if (res.ok) showRegSuccess({ name, sessions, email });
+      else if (res.duplicate) showRegDuplicate(res.duplicateSessions);
+      else showToast('❌ 送出失敗：' + (res.error || '請稍後再試'));
     })
-    .catch(err => { btn.disabled = false; btn.textContent = '確認送出報名 →'; showToast('❌ ' + err.message); });
-
+    .withFailureHandler(err => { btn.disabled = false; btn.textContent = '確認送出報名 →'; showToast('❌ ' + err.message); })
+    .submitRegistration({ name, gender, age, ig, email, pay, sessions });
 }
+
 function showRegSuccess(data) {
   document.getElementById('reg-form-view').style.display    = 'none';
   document.getElementById('reg-success-view').style.display = 'block';
