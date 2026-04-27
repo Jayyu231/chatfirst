@@ -1146,7 +1146,7 @@ function rebuildStats() {
     return;
   }
 
-  callAPI('saveAndRebuild', { statusUpdates })
+ callAPIPost('saveAndRebuild', { statusUpdates })
     .then(res => {
       btn.disabled = false; btn.textContent = '📊 更新統計';
       showToast(res.ok ? '✅ 同步成功！' : '❌ ' + (res.error || '未知錯誤'));
