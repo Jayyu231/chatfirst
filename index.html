@@ -205,10 +205,11 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
         <div class="card-icon">📝</div>
         <div><h3>報名 / 查詢</h3><p>填寫報名表單或查詢報名狀態</p></div>
       </div>
-      <div class="landing-card" onclick="showPage('page-login')">
-        <div class="card-icon">🔐</div>
-        <div><h3>管理者</h3><p>查看名單、備註、確認報名狀態</p></div>
-      </div>
+    <!-- 改後：預設隱藏，只有 #admin 才顯示 -->
+    <div class="landing-card" id="admin-card" onclick="showPage('page-login')" style="display:none;">
+      <div class="card-icon">🔐</div>
+      <div><h3>管理者</h3><p>查看名單、備註、確認報名狀態</p></div>
+    </div>
     </div>
   </div>
 </div>
@@ -331,6 +332,15 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <div class="toast" id="toast"></div>
 
 <script>
+  // 判斷網址是否有 #admin，有才顯示管理者入口
+(function() {
+  if (window.location.hash === '#admin') {
+    document.addEventListener('DOMContentLoaded', () => {
+      const card = document.getElementById('admin-card');
+      if (card) card.style.display = 'flex';
+    });
+  }
+})();
 // ── API 設定（GitHub Pages 版本）──
 // ✅ 請把下面這行換成你的 Apps Script 部署網址
 const API_URL = 'https://script.google.com/macros/s/AKfycbzcTwBNqIhBdIT-63DS-5CHDO3FGLw6C7cORdvZisJ5JgGVARHsnHj_MyIz2HluCaxzww/exec';
