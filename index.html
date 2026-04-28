@@ -1195,6 +1195,7 @@ function adminSaveNote(ta) {
         // ⭐ rollback（避免 UI 假成功）
       if (ta.dataset.saved !== undefined) {
         ta.value = ta.dataset.saved;
+      }
       });
   }, 600);
 }
