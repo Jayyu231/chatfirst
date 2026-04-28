@@ -868,13 +868,30 @@ async function submitForm() {
   btn.textContent = '⏳ 送出中…';
 
   try {
-    // ===== 1️⃣ 送出（寫入）=====
-    await callAPIPost('submitRegistration', {
+    // 1️⃣ 送出報名
+    const submitRes = await callAPIPost('submitRegistration', {
       name, gender, age, ig, email, pay, sessions
     });
 
-    // ===== 2️⃣ retry 查詢（解決 eventual consistency）=====
-    const res = await queryWithRetry(email, 6, 600); // 最多 3.6 秒
+    // 重複報名
+    if (submitRes.duplicate) {
+      btn.disabled = false;
+      btn.textContent = '確認送出報名 →';
+      showRegDuplicate(submitRes.duplicateSessions);
+      return;
+    }
+
+    // 其他錯誤
+    if (!submitRes.ok) {
+      btn.disabled = false;
+      btn.textContent = '確認送出報名 →';
+      showToast('❌ ' + (submitRes.error || '送出失敗'));
+      return;
+    }
+
+    // 2️⃣ 查詢確認（retry）
+    btn.textContent = '整理資料中...';
+    const res = await queryWithRetry(email, 5, 400);
 
     btn.disabled = false;
     btn.textContent = '確認送出報名 →';
@@ -882,15 +899,11 @@ async function submitForm() {
     if (res.found) {
       showRegSuccess({ name, sessions, email });
     } else {
-      // 👉 fallback（寫入成功但還查不到）
-      showToast('⚠️ 已送出，系統同步中（約需數秒）');
-
-      // 可選：延遲再查一次（不打擾使用者）
+      // fallback：寫入成功但查詢還沒同步
+      showRegSuccess({ name, sessions, email }); // 直接顯示成功，因為 submitRes.ok = true
+      // 背景靜默重試，不打擾使用者
       setTimeout(async () => {
-        const retryRes = await callAPI('queryMyRegistration', { email });
-        if (retryRes.found) {
-          showRegSuccess({ name, sessions, email });
-        }
+        await callAPI('queryMyRegistration', { email });
       }, 2000);
     }
 
@@ -901,19 +914,16 @@ async function submitForm() {
   }
 }
 
-
-async function queryWithRetry(email, maxRetry = 5, delay = 500) {
+async function queryWithRetry(email, maxRetry = 5, delay = 400) {
   for (let i = 0; i < maxRetry; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, delay));
     const res = await callAPI('queryMyRegistration', { email });
-
     if (res.found) {
       console.log(`✅ 第 ${i+1} 次成功`);
       return res;
     }
-
-    await new Promise(r => setTimeout(r, delay));
+    console.log(`⏳ 第 ${i+1} 次查不到，繼續重試...`);
   }
-
   console.log('❌ retry 後仍查不到');
   return { found: false };
 }
