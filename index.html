@@ -825,6 +825,7 @@ function getSelectedSessions() {
 }
 
 async function submitForm() {
+  // 1. 取得與清理欄位資料
   const name = document.getElementById('f-name').value.trim();
   const gender = document.getElementById('f-gender').value;
   const age = document.getElementById('f-age').value.trim();
@@ -833,86 +834,118 @@ async function submitForm() {
   const pay = document.getElementById('f-pay').value.trim();
   const sessions = getSelectedSessions();
 
-  // ===== 基本驗證 =====
+  // 2. 基本驗證 (你原本的邏輯)
   if (!name)                        { showToast('⚠️ 請填寫姓名'); return; }
   if (name.length < 2)              { showToast('⚠️ 姓名至少需要 2 個字'); return; }
   if (/[0-9!@#$%^&*()_+]/.test(name)) { showToast('⚠️ 姓名不能包含數字或特殊符號'); return; }
-
   if (!gender) { showToast('⚠️ 請選擇性別'); return; }
-
   if (!age)                  { showToast('⚠️ 請填寫年齡'); return; }
   if (!/^\d+$/.test(age))    { showToast('⚠️ 年齡請填寫數字'); return; }
   if (age < 18 || age > 100) { showToast('⚠️ 年齡請填寫 18–100 之間'); return; }
-
   if (!email) { showToast('⚠️ 請填寫 Email'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showToast('⚠️ Email 格式不正確'); return;
-  }
-
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('⚠️ Email 格式不正確'); return; }
   if (!sessions.length) { showToast('⚠️ 請選擇至少一個場次'); return; }
-
   if (!ig) { showToast('⚠️ 請填寫 IG 帳號'); return; }
   const igClean = ig.startsWith('@') ? ig.slice(1) : ig;
-  if (!/^[a-zA-Z0-9._]{1,30}$/.test(igClean)) {
-    showToast('⚠️ IG 格式錯誤'); return;
-  }
-
+  if (!/^[a-zA-Z0-9._]{1,30}$/.test(igClean)) { showToast('⚠️ IG 格式錯誤'); return; }
   if (!pay) { showToast('⚠️ 請填寫匯款後五碼'); return; }
-  if (!/^\d{5}$/.test(pay)) {
-    showToast('⚠️ 後五碼必須是 5 位數字'); return;
-  }
+  if (!/^\d{5}$/.test(pay)) { showToast('⚠️ 後五碼必須是 5 位數字'); return; }
 
-  // ===== UI 鎖定 =====
+  // 3. UI 鎖定
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
   btn.textContent = '⏳ 送出中…';
 
+  let attempts = 0;
+  const maxAttempts = 3;
+  let submitRes = null;
+
+  // 4. 送出報名 (包含系統忙碌自動重試)
+  while (attempts < maxAttempts) {
+    try {
+      submitRes = await callAPIPost('submitRegistration', {
+        name, gender, age, ig, email, pay, sessions
+      });
+
+      // 如果成功或是業務邏輯錯誤 (重複、額滿)，就跳出迴圈
+      if (submitRes.ok || submitRes.duplicate || submitRes.full) break;
+
+      // 只有在「系統忙碌」時才觸發重試
+      if (submitRes.error === '系統忙碌中，請稍後再試' && attempts < maxAttempts - 1) {
+        attempts++;
+        btn.textContent = `⏳ 系統忙碌，重試中 (${attempts}/3)`;
+        const delay = 1000 + Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // 其他未知錯誤也跳出
+      break;
+
+    } catch (err) {
+      console.error('Submit Error:', err);
+      if (attempts < maxAttempts - 1) {
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        showToast('❌ 連線異常：' + err.message);
+        resetSubmitBtn(btn);
+        return;
+      }
+    }
+  }
+
+  // 5. 處理最終提交結果 (處理你原本設計的重複報名與錯誤邏輯)
+  if (!submitRes) {
+    showToast('❌ 無法連線至伺服器');
+    resetSubmitBtn(btn);
+    return;
+  }
+
+  // --- 處理重複報名 (恢復你原本的設計) ---
+  if (submitRes.duplicate) {
+    resetSubmitBtn(btn);
+    showRegDuplicate(submitRes.duplicateSessions);
+    return;
+  }
+
+  // --- 處理其他非成功錯誤 (例如額滿) ---
+  if (!submitRes.ok) {
+    resetSubmitBtn(btn);
+    showToast('❌ ' + (submitRes.error || '送出失敗'));
+    return;
+  }
+
+  // 6. 寫入成功後的查詢確認 (Retry 邏輯)
   try {
-    // 1️⃣ 送出報名
-    const submitRes = await callAPIPost('submitRegistration', {
-      name, gender, age, ig, email, pay, sessions
-    });
-
-    // 重複報名
-    if (submitRes.duplicate) {
-      btn.disabled = false;
-      btn.textContent = '確認送出報名 →';
-      showRegDuplicate(submitRes.duplicateSessions);
-      return;
-    }
-
-    // 其他錯誤
-    if (!submitRes.ok) {
-      btn.disabled = false;
-      btn.textContent = '確認送出報名 →';
-      showToast('❌ ' + (submitRes.error || '送出失敗'));
-      return;
-    }
-
-    // 2️⃣ 查詢確認（retry）
     btn.textContent = '整理資料中...';
-    const res = await queryWithRetry(email, 5, 400);
+    const res = await queryWithRetry(email, 5, 500);
 
-    btn.disabled = false;
-    btn.textContent = '確認送出報名 →';
+    resetSubmitBtn(btn);
 
     if (res.found) {
       showRegSuccess({ name, sessions, email });
     } else {
-      // fallback：寫入成功但查詢還沒同步
-      showRegSuccess({ name, sessions, email }); // 直接顯示成功，因為 submitRes.ok = true
-      // 背景靜默重試，不打擾使用者
+      // 雖然查不到，但既然 submitRes.ok 為真，仍顯示成功畫面
+      showRegSuccess({ name, sessions, email });
+      // 背景靜默再次更新
       setTimeout(async () => {
         await callAPI('queryMyRegistration', { email });
-      }, 2000);
+      }, 3000);
     }
-
   } catch (err) {
-    btn.disabled = false;
-    btn.textContent = '確認送出報名 →';
-    showToast('❌ ' + err.message);
+    resetSubmitBtn(btn);
+    showRegSuccess({ name, sessions, email });
   }
 }
+
+/** 輔助：恢復按鈕狀態 */
+function resetSubmitBtn(btn) {
+  btn.disabled = false;
+  btn.textContent = '確認送出報名 →';
+}
+
+
 
 async function queryWithRetry(email, maxRetry = 5, delay = 400) {
   for (let i = 0; i < maxRetry; i++) {
