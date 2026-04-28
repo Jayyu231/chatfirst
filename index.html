@@ -857,7 +857,7 @@ async function submitForm() {
   btn.textContent = '⏳ 送出中…';
 
   let attempts = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 5;
   let submitRes = null;
 
   // 4. 送出報名 (包含系統忙碌自動重試)
