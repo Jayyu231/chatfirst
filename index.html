@@ -824,7 +824,7 @@ function getSelectedSessions() {
   return [...document.querySelectorAll('#sessions-grid input[type=checkbox]:checked')].map(cb => cb.value);
 }
 
-function submitForm() {
+async function submitForm() {
   const name = document.getElementById('f-name').value.trim();
   const gender = document.getElementById('f-gender').value;
   const age = document.getElementById('f-age').value.trim();
@@ -833,76 +833,91 @@ function submitForm() {
   const pay = document.getElementById('f-pay').value.trim();
   const sessions = getSelectedSessions();
 
-  // ===== 驗證 =====
+  // ===== 基本驗證 =====
   if (!name)                        { showToast('⚠️ 請填寫姓名'); return; }
   if (name.length < 2)              { showToast('⚠️ 姓名至少需要 2 個字'); return; }
   if (/[0-9!@#$%^&*()_+]/.test(name)) { showToast('⚠️ 姓名不能包含數字或特殊符號'); return; }
 
-  if (!gender)                      { showToast('⚠️ 請選擇性別'); return; }
+  if (!gender) { showToast('⚠️ 請選擇性別'); return; }
 
-  if (!age)                         { showToast('⚠️ 請填寫年齡'); return; }
-  if (!/^\d+$/.test(age))           { showToast('⚠️ 年齡請填寫數字'); return; }
-  if (age < 18 || age > 100)        { showToast('⚠️ 年齡請填寫 18–100 之間'); return; }
+  if (!age)                  { showToast('⚠️ 請填寫年齡'); return; }
+  if (!/^\d+$/.test(age))    { showToast('⚠️ 年齡請填寫數字'); return; }
+  if (age < 18 || age > 100) { showToast('⚠️ 年齡請填寫 18–100 之間'); return; }
 
-  if (!email)                       { showToast('⚠️ 請填寫 Email'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('⚠️ Email 格式不正確'); return; }
+  if (!email) { showToast('⚠️ 請填寫 Email'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('⚠️ Email 格式不正確'); return;
+  }
 
-  if (!sessions.length)             { showToast('⚠️ 請選擇至少一個場次'); return; }
+  if (!sessions.length) { showToast('⚠️ 請選擇至少一個場次'); return; }
 
-  if (!ig)                          { showToast('⚠️ 請填寫 IG 帳號'); return; }
+  if (!ig) { showToast('⚠️ 請填寫 IG 帳號'); return; }
   const igClean = ig.startsWith('@') ? ig.slice(1) : ig;
-  if (!/^[a-zA-Z0-9._]{1,30}$/.test(igClean))  { showToast('⚠️ IG 帳號格式錯誤'); return; }
-  if (/^\./.test(igClean) || /\.$/.test(igClean)) { showToast('⚠️ IG 帳號不能以句點開頭或結尾'); return; }
-  if (/\.{2,}/.test(igClean)) { showToast('⚠️ IG 帳號不能有連續句點'); return; }
+  if (!/^[a-zA-Z0-9._]{1,30}$/.test(igClean)) {
+    showToast('⚠️ IG 格式錯誤'); return;
+  }
 
-  if (!pay)                        { showToast('⚠️ 請填寫匯款後五碼'); return; }
-  if (!/^\d{5}$/.test(pay))        { showToast('⚠️ 後五碼必須是 5 位數字'); return; }
+  if (!pay) { showToast('⚠️ 請填寫匯款後五碼'); return; }
+  if (!/^\d{5}$/.test(pay)) {
+    showToast('⚠️ 後五碼必須是 5 位數字'); return;
+  }
 
-  // ===== UI 狀態 =====
+  // ===== UI 鎖定 =====
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
   btn.textContent = '⏳ 送出中…';
 
-// ===== API 呼叫 =====
-  callAPIPost('submitRegistration', { name, gender, age, ig, email, pay, sessions })
-    .then(res => {
-      // 注意：這裡先不急著把按鈕改回「確認送出」，讓使用者覺得還在處理
-      
-      if (!res.ok) {
-        btn.disabled = false;
-        btn.textContent = '確認送出報名 →';
-        showToast('❌ ' + (res.error || '送出失敗'));
-        return;
-      }
-
-      if (res.duplicate) {
-        btn.disabled = false;
-        btn.textContent = '確認送出報名 →';
-        showRegDuplicate(res.duplicateSessions);
-        return;
-      }
-
-      // ✅ 資料已入庫，現在人為延遲 1.5 秒，確保後續查詢（如名次）是準確的
-      btn.textContent = '整理資料中...'; 
-      
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = '確認送出報名 →';
-        
-        showRegSuccess({
-          name,
-          sessions,
-          email
-        });
-      }, 1500); // 這裡就是那 1.5 秒的「優雅等待」
-    })
-    .catch(err => {
-      btn.disabled = false;
-      btn.textContent = '確認送出報名 →';
-      showToast('❌ ' + err.message);
+  try {
+    // ===== 1️⃣ 送出（寫入）=====
+    await callAPIPost('submitRegistration', {
+      name, gender, age, ig, email, pay, sessions
     });
+
+    // ===== 2️⃣ retry 查詢（解決 eventual consistency）=====
+    const res = await queryWithRetry(email, 6, 600); // 最多 3.6 秒
+
+    btn.disabled = false;
+    btn.textContent = '確認送出報名 →';
+
+    if (res.found) {
+      showRegSuccess({ name, sessions, email });
+    } else {
+      // 👉 fallback（寫入成功但還查不到）
+      showToast('⚠️ 已送出，系統同步中（約需數秒）');
+
+      // 可選：延遲再查一次（不打擾使用者）
+      setTimeout(async () => {
+        const retryRes = await callAPI('queryMyRegistration', { email });
+        if (retryRes.found) {
+          showRegSuccess({ name, sessions, email });
+        }
+      }, 2000);
+    }
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '確認送出報名 →';
+    showToast('❌ ' + err.message);
+  }
 }
-  
+
+
+async function queryWithRetry(email, maxRetry = 5, delay = 500) {
+  for (let i = 0; i < maxRetry; i++) {
+    const res = await callAPI('queryMyRegistration', { email });
+
+    if (res.found) {
+      console.log(`✅ 第 ${i+1} 次成功`);
+      return res;
+    }
+
+    await new Promise(r => setTimeout(r, delay));
+  }
+
+  console.log('❌ retry 後仍查不到');
+  return { found: false };
+}
+
 
 function showRegSuccess(data) {
   document.getElementById('reg-form-view').style.display    = 'none';
