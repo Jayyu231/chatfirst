@@ -808,14 +808,15 @@ function renderSessionCheckboxes(sessions) {
   const grid = document.getElementById('sessions-grid');
   grid.innerHTML = '';
   sessions.forEach(s => {
+    const isFull = (s.isFull === true || String(s.isFull).toLowerCase() === 'true');
     const pct   = s.fillRate;
     const stCls = s.isFull ? 'sess-full' : pct >= 70 ? 'sess-warn' : 'sess-ok';
     const stTxt = s.isFull ? '🔴 額滿' : pct >= 70 ? '🟡 即將額滿' : `🟢 剩 ${s.cap - s.count} 位`;
     const lbl   = document.createElement('label');
-    lbl.className = 'session-check' + (s.isFull ? ' full' : '');
+    lbl.className = 'session-check' + (isFull ? ' full' : ''); // 這裡也要用新的 isFull
     lbl.innerHTML = `
-      <input type="checkbox" value="${esc(s.code)}" ${s.isFull ? 'disabled' : ''}
-        onchange="this.closest('.session-check').classList.toggle('selected',this.checked)">
+     <input type="checkbox" value="${esc(s.code)}" ${isFull ? 'disabled' : ''} 
+      onchange="this.closest('.session-check').classList.toggle('selected',this.checked)">
       <div class="sess-info">
         <div class="sess-label">${esc(s.label)}</div>
         <div class="sess-count">報名人數：${s.count} / ${s.cap}</div>
@@ -1130,7 +1131,7 @@ function buildAdminPanel(s, pi) {
               data-key="${k}" onblur="adminSaveNote(this)" oninput="autoResize(this)">${esc(p.note)}</textarea>
             <div class="chk-wrap">
               <span>已確認</span>
-              <input type="checkbox" data-key="${k}" ${p.checked?'checked':''}
+              <input type="checkbox" data-key="${k}" ${p.checked === true ? 'checked' : ''}
                 onchange="adminSaveChecked(this,${pi},${idx})">
             </div>
           </div>
