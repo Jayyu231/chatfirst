@@ -1170,13 +1170,26 @@ function filterAdminCards(inp, pi) {
   });
 }
 
-let noteTimer = null;
+const noteTimers = {}; // ⭐ 關鍵
+
 function adminSaveNote(ta) {
-  clearTimeout(noteTimer);
-  const key = ta.dataset.key, note = ta.value;
-  noteTimer = setTimeout(() => {
-    // saveNote（備註）
-    callAPIPost('saveNote', { key, note }).then(()=>showToast('✅ 備註已儲存')).catch(()=>showToast('❌ 儲存失敗'));
+  const key  = ta.dataset.key;
+  const note = ta.value;
+
+  // 👉 只取消「這個 key」的 timer
+  if (noteTimers[key]) {
+    clearTimeout(noteTimers[key]);
+  }
+
+  noteTimers[key] = setTimeout(() => {
+    callAPIPost('saveNote', { key, note })
+      .then(() => {
+        console.log('✅ 備註已儲存', key);
+        // 👉 不要每次都 showToast（會洗畫面）
+      })
+      .catch(() => {
+        showToast('❌ 儲存失敗');
+      });
   }, 600);
 }
 
