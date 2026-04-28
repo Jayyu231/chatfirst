@@ -1186,9 +1186,15 @@ function adminSaveNote(ta) {
       .then(() => {
         console.log('✅ 備註已儲存', key);
         // 👉 不要每次都 showToast（會洗畫面）
+      // ⭐ 新增這行（關鍵）
+      ta.dataset.saved = note;
       })
       .catch(() => {
         showToast('❌ 儲存失敗');
+
+        // ⭐ rollback（避免 UI 假成功）
+      if (ta.dataset.saved !== undefined) {
+        ta.value = ta.dataset.saved;
       });
   }, 600);
 }
