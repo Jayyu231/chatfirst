@@ -1096,6 +1096,20 @@ function renderAdminPanels() {
     div.innerHTML = buildAdminPanel(s,i);
     panels.appendChild(div);
   });
+  syncNotesToUI();
+}
+  function syncNotesToUI() {
+  document.querySelectorAll('.note-ta').forEach(ta => {
+    const key = ta.dataset.key;
+
+    const found = adminData.sessions
+      .flatMap(s => s.registrants)
+      .find(r => r.key === key);
+
+    if (found) {
+      ta.value = found.note || '';
+    }
+  });
 }
 
 function buildAdminPanel(s, pi) {
