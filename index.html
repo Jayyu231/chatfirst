@@ -1099,12 +1099,14 @@ function renderAdminPanels() {
   syncNotesToUI();
 }
   function syncNotesToUI() {
+    console.log('SYNC START');
   document.querySelectorAll('.note-ta').forEach(ta => {
     const key = ta.dataset.key;
 
     const found = adminData.sessions
       .flatMap(s => s.registrants)
       .find(r => r.key === key);
+    console.log('SYNC', key, '=>', found?.note);
 
     if (found) {
       ta.value = found.note || '';
