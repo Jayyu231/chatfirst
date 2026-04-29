@@ -1046,6 +1046,7 @@ function loadAdminData() {
   document.getElementById('admin-main').style.display    = 'none';
   callAPI('getRegistrationData')
     .then(data => {
+      console.log('API 回傳:', data);
       btn.disabled = false; btn.textContent = '🔄 重整';
       document.getElementById('admin-loading').style.display = 'none';
       if (data.error) { showToast('❌ ' + data.error); return; }
